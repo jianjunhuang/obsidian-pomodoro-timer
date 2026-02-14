@@ -36,6 +36,10 @@ const toggleTimer = () => {
     timer.toggleTimer()
 }
 
+const stop = () => {
+    timer.stop()
+}
+
 const toggleMode = () => {
     timer.toggleMode()
 }
@@ -46,6 +50,10 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
         return
     }
     extra = value
+}
+
+const skip = () => {
+    timer.skip()
 }
 </script>
 
@@ -164,6 +172,36 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                     >
                 </span>
             {/if}
+            <span on:click={stop} class="control">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-stop"
+                    ><rect width="18" height="18" x="3" y="3" rx="2" /></svg
+                >
+            </span>
+            <span on:click={skip} class="control">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-skip-forward"
+                    ><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" x2="19" y1="5" y2="19" /></svg
+                >
+            </span>
             <span on:click={reset} class="control">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"

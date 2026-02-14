@@ -74,6 +74,24 @@ export default class PomodoroTimerPlugin extends Plugin {
         })
 
         this.addCommand({
+            id: 'stop-timer',
+            name: 'Stop timer',
+            callback: () => {
+                this.timer?.stop()
+                new Notice('Timer stopped')
+            },
+        })
+
+        this.addCommand({
+            id: 'skip-timer',
+            name: 'Skip to next session',
+            callback: () => {
+                this.timer?.skip()
+                new Notice('Skipped to next session')
+            },
+        })
+
+        this.addCommand({
             id: 'toggle-mode',
             name: 'Toggle timer mode',
             callback: () => {

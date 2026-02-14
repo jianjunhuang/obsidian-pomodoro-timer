@@ -157,7 +157,7 @@ export default class Timer implements Readable<TimerStore> {
         let autostart = false
         this.update((state) => {
             const ctx = this.createLogContext(state)
-            this.processLog(ctx)
+            this.processLog(ctx, false)
             autostart = state.autostart
             return this.endSession(state)
         })
@@ -180,11 +180,11 @@ export default class Timer implements Readable<TimerStore> {
         return { ...state, task }
     }
 
-    private async processLog(ctx: LogContext) {
+    private async processLog(ctx: LogContext, stopped: boolean = false) {
         if (ctx.mode == 'WORK') {
             await this.plugin.tracker?.updateActual()
         }
-        const logFile = await this.logger.log(ctx)
+        const logFile = await this.logger.log(ctx, stopped)
         this.notify(ctx, logFile)
     }
 
@@ -280,7 +280,8 @@ export default class Timer implements Readable<TimerStore> {
     public reset() {
         this.update((state) => {
             if (state.elapsed > 0) {
-                this.logger.log(this.createLogContext(state))
+                const ctx = this.createLogContext(state)
+                this.processLog(ctx, true)
             }
 
             state.duration =
@@ -314,6 +315,59 @@ export default class Timer implements Readable<TimerStore> {
 
     public toggleTimer() {
         this.state.running ? this.pause() : this.start()
+    }
+
+    public stop() {
+        // Only log if there's been any elapsed time
+        if (this.state.elapsed > 0) {
+            const ctx = this.createLogContext(this.state)
+            this.processLog(ctx, true)
+        }
+
+        // Reset state without clearing the task if pinned
+        this.update((state) => {
+            state.duration =
+                state.mode == 'WORK' ? state.workLen : state.breakLen
+            state.count = state.duration * 60 * 1000
+            state.inSession = false
+            state.running = false
+            this.clock.postMessage({
+                start: false,
+                lowFps: this.plugin.getSettings().lowFps,
+            })
+            state.startTime = null
+            state.elapsed = 0
+            return state
+        })
+    }
+
+    public skip() {
+        // Only log if there's been any elapsed time
+        if (this.state.elapsed > 0) {
+            const ctx = this.createLogContext(this.state)
+            this.processLog(ctx, true)
+        }
+
+        // Switch to next mode and reset state
+        this.update((state) => {
+            // Switch mode
+            if (state.breakLen == 0) {
+                state.mode = 'WORK'
+            } else {
+                state.mode = state.mode == 'WORK' ? 'BREAK' : 'WORK'
+            }
+            state.duration = state.mode == 'WORK' ? state.workLen : state.breakLen
+            state.count = state.duration * 60 * 1000
+            state.inSession = false
+            state.running = false
+            this.clock.postMessage({
+                start: false,
+                lowFps: this.plugin.getSettings().lowFps,
+            })
+            state.startTime = null
+            state.elapsed = 0
+            return state
+        })
     }
 
     public playAudio() {

@@ -12,6 +12,7 @@ export type TimerLog = {
     session: number
     task: TaskLog
     finished: boolean
+    stopped: boolean
 }
 
 export type TaskLog = Pick<
@@ -46,9 +47,9 @@ export default class Logger {
         this.plugin = plugin
     }
 
-    public async log(ctx: LogContext): Promise<TFile | void> {
+    public async log(ctx: LogContext, stopped: boolean = false): Promise<TFile | void> {
         const logFile = await this.resolveLogFile(ctx)
-        const log = this.createLog(ctx)
+        const log = this.createLog(ctx, stopped)
         if (logFile) {
             const logText = await this.toText(log, logFile)
             if (logText) {
@@ -115,7 +116,7 @@ export default class Logger {
         }
     }
 
-    private createLog(ctx: LogContext): TimerLog {
+    private createLog(ctx: LogContext, stopped: boolean = false): TimerLog {
         return {
             mode: ctx.mode,
             duration: Math.floor(ctx.elapsed / 60000),
@@ -124,6 +125,7 @@ export default class Logger {
             session: ctx.duration,
             task: ctx.task,
             finished: ctx.count == ctx.elapsed,
+            stopped,
         }
     }
 
@@ -147,15 +149,17 @@ export default class Logger {
                 return ''
             }
         } else {
-            // Built-in log: ignore unfinished session
-            if (!log.finished) {
+            // Built-in log: ignore unfinished session unless it was stopped
+            if (!log.finished && !log.stopped) {
                 return ''
             }
 
             let begin = moment(log.begin)
             let end = moment(log.end)
+            const stoppedLabel = log.stopped ? ' (stopped)' : ''
+
             if (settings.logFormat === 'SIMPLE') {
-                return `**${log.mode}(${log.duration}m)**: ${begin.format(
+                return `**${log.mode}(${log.duration}m)**${stoppedLabel}: ${begin.format(
                     'HH:mm',
                 )} - ${end.format('HH:mm')}`
             }
@@ -166,7 +170,7 @@ export default class Logger {
                     log.duration
                 }m) (begin:: ${begin.format(
                     'YYYY-MM-DD HH:mm',
-                )}) - (end:: ${end.format('YYYY-MM-DD HH:mm')})`
+                )}) - (end:: ${end.format('YYYY-MM-DD HH:mm')}) (stopped:: ${log.stopped})`
             }
 
             return ''
